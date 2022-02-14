@@ -1,15 +1,6 @@
 #+TITLE: My Emacs Literate Configuration
 #+AUTHOR: Jonathan Prairie
 
-* test.el
-:PROPERTIES:
-:header-args: :tangle test.el
-:END:
-
-#+begin_src emacs-lisp
-(testing)
-#+end_src
-
 * config.el
 :PROPERTIES:
 :header-args: :tangle config.el
@@ -42,8 +33,10 @@ deeper-blue is love
 (setq display-line-numbers-type 'relative)
 #+end_src
 
-this is a function to send the space key (dec ascii code 32)
+this function sends the space key (dec ascii code 32)
+
 more documentation on unread-command-events: https://www.gnu.org/software/emacs/manual/html_node/elisp/Event-Input-Misc.html
+
 Note: space character read form is '? ' (with a space! and no quotes)
 
 #+begin_src emacs-lisp
@@ -89,6 +82,7 @@ Note: space character read form is '? ' (with a space! and no quotes)
 #+end_src
 
 we want to set C-<SPC> to be an alternate leader key, but we want it to work in normal mode too.
+
 Note: terminal emacs sees C-<SPC> as C-@ for some reason.
 
 #+begin_src emacs-lisp
@@ -99,6 +93,7 @@ Note: terminal emacs sees C-<SPC> as C-@ for some reason.
 #+end_src
 
 tangle org files on save
+
 from: https://systemcrafters.cc/emacs-from-scratch/configure-everything-with-org-babel/
 
 #+begin_src emacs-lisp
@@ -115,15 +110,16 @@ from: https://systemcrafters.cc/emacs-from-scratch/configure-everything-with-org
  (lambda () (add-hook 'after-save-hook #'jp/org-babel-tangle)))
 #+end_src
 
-don't pause before showing which-key buffer
+don't pause before showing which-key buffer (still has an initial delay when emacs first starts up for some reason though)
+
 more documentation here: https://github.com/justbur/emacs-which-key#other-options
-(still has an initial delay when emacs first starts up for some reason though)
 
 #+begin_src emacs-lisp
 (setq which-key-idle-delay 0.01)
 #+end_src
 
 disable rainbow delimiters everywhere
+
 there's probably a better way to do this but it seems to work 🤷
 
 #+begin_src emacs-lisp
