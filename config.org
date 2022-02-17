@@ -81,6 +81,15 @@ Note: space character read form is '? ' (with a space! and no quotes)
       :desc "Eval Expression" ":" 'pp-eval-expression)
 #+end_src
 
+add tangle to org-mode localleader keymap
+
+#+begin_src emacs-lisp
+(after! org-mode
+  (map! :map org-mode-map
+        :localleader
+        :desc "tangle" "z" 'org-babel-tangle))
+#+end_src
+
 we want to set C-<SPC> to be an alternate leader key, but we want it to work in normal mode too.
 
 Note: terminal emacs sees C-<SPC> as C-@ for some reason.
