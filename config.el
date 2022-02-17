@@ -45,10 +45,9 @@
       :desc "M-x" ";" 'execute-extended-command
       :desc "Eval Expression" ":" 'pp-eval-expression)
 
-(after! org-mode
-  (map! :map org-mode-map
-        :localleader
-        :desc "tangle" "z" 'org-babel-tangle))
+(map! :map org-mode-map
+      :localleader
+      :desc "tangle" "z" 'org-babel-tangle)
 
 (setq doom-leader-alt-key "C-@")
 (setq doom-localleader-alt-key "C-@ m")

@@ -84,10 +84,9 @@ Note: space character read form is '? ' (with a space! and no quotes)
 add tangle to org-mode localleader keymap
 
 #+begin_src emacs-lisp
-(after! org-mode
-  (map! :map org-mode-map
-        :localleader
-        :desc "tangle" "z" 'org-babel-tangle))
+(map! :map org-mode-map
+      :localleader
+      :desc "tangle" "z" 'org-babel-tangle)
 #+end_src
 
 we want to set C-<SPC> to be an alternate leader key, but we want it to work in normal mode too.
