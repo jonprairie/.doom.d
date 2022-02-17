@@ -90,9 +90,6 @@
            (file+head "reference/${title}.org" "#+title: ${title}\n")
            :immediate-finish t
            :unnarrowed t)))
-  (defun jp/tag-new-node-as-draft ()
-    (org-roam-tag-add '("draft")))
-  (add-hook 'org-roam-capture-new-node-hook #'jp/tag-new-node-as-draft)
   (set-company-backend! 'org-mode '(company-capf))
   (cl-defmethod org-roam-node-type ((node org-roam-node))
     "Return the TYPE of NODE."
