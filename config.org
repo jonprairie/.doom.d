@@ -170,3 +170,9 @@ Note: Need to configure c compile environment (MSYS2) if on Windows, before the 
         (concat "${type:15} ${title:*} " (propertize "${tags:10}" 'face 'org-tag))))
 (org-roam-setup)
 #+end_src
+
+Ignore weird lsp issues
+
+#+begin_src emacs-lisp
+(setq lsp-restart 'ignore)
+#+end_src
