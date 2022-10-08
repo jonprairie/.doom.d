@@ -10,6 +10,7 @@
 (setq org-directory "~/org/")
 
 (setq display-line-numbers-type 'relative)
+(setq uniquify-buffer-name-style 'post-forward-angle-brackets)
 
 (defun jp/send-space ()
   (interactive)
@@ -24,6 +25,8 @@
  "<f8>" 'evil-scroll-down
  "S-<f7>" 'evil-goto-first-line
  "S-<f8>" 'evil-goto-line
+ "<f9>" '+workspace/switch-left
+ "<f10>" '+workspace/switch-right
 
  "ESC h" 'evil-window-left
  "ESC l" 'evil-window-right
@@ -33,13 +36,26 @@
  "C-h" 'backward-kill-word
  )
 
+(map! :map evil-org-mode-map
+      :inv "M-j" nil
+      :inv "M-k" nil
+      :inv "M-l" nil
+      :inv "M-h" nil)
+
 (map!
  :n "U" 'evil-redo
- :n "H" 'evil-beginning-of-line
- :n "L" 'evil-end-of-line
+ :nm "H" 'evil-beginning-of-line
+ :nm "L" 'evil-end-of-line
+ :nm ":" 'evil-repeat-find-char
  :n ";" 'evil-ex
- :n ":" 'evil-repeat-find-char
+ :nm "TAB" 'evil-jump-item
+ :vo "i l" 'evil-inner-paren
+ :vo "a l" 'evil-a-paren
  )
+
+(map! :leader
+ :n :desc "new workspace" "d w a" '+workspace/new
+ :n :desc "new named workspace" "d w n" '+workspace/new-named)
 
 (map! :leader
       :desc "M-x" ";" 'execute-extended-command
@@ -108,3 +124,13 @@
 (org-roam-setup)
 
 (setq lsp-restart 'ignore)
+
+(after! cider
+  (map! :map cider-mode-map
+        :n "<f6>" nil))
+
+(map! :map clojure-mode-map
+      :localleader
+      :n "c" 'cider-connect-sibling-clj)
+
+(delete 'vterm-mode evil-escape-excluded-major-modes)
