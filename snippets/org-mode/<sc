@@ -1,0 +1,9 @@
+# -*- mode: snippet -*-
+# name: c src block
+# uuid: <sc
+# key: <sc
+# condition: t
+# --
+#+begin_src C
+`%`$0
+#+end_src

@@ -1,0 +1,407 @@
+#+TITLE: My Emacs Literate Configuration
+#+AUTHOR: Jonathan Prairie
+
+* config.el
+:PROPERTIES:
+:header-args: :tangle config.el
+:ID:       deb22adf-768f-44e2-b13a-1246b3ae291d
+:END:
+
+I don't think this line is strictly necessary, isn't lexical binding the default now?
+
+#+begin_src emacs-lisp
+;;; $DOOMDIR/config.el -*- lexical-binding: t; -*-
+#+end_src
+
+#+begin_src emacs-lisp
+(setq user-full-name "Jonathan Prairie"
+      user-mail-address "jon.a.prairie@gmail.com")
+(setq doom-font (font-spec :family "monospace" :size 12 :weight 'semi-light)
+       doom-variable-pitch-font (font-spec :family "sans" :size 13))
+#+end_src
+
+deeper-blue is love
+
+#+begin_src emacs-lisp
+(setq doom-theme 'deeper-blue)
+#+end_src
+
+#+begin_src emacs-lisp
+(setq org-directory "~/external/org/")
+#+end_src
+
+#+begin_src emacs-lisp
+(setq display-line-numbers-type 'visual)
+(setq uniquify-buffer-name-style 'post-forward-angle-brackets)
+(setq evil-cross-lines t)
+(setq sly-contribs '(sly-stepper sly-repl-ansi-color sly-fancy sly-asdf sly-macrostep))
+;;(setq sly-contribs sly-stepper sly-repl-ansi-color sly-fancy sly-asdf sly-macrostep sly-quicklisp)
+#+end_src
+
+disable snipe mode, i don't use it much anyways and i'd rather use s as a prefix
+
+source: https://github.com/doomemacs/doomemacs/blob/400fa0836d830ac409a67a4c4af3012b5e07dc60/modules/editor/evil/README.org#restoring-old-substitution-behavior-on-ss
+
+#+begin_src emacs-lisp
+(remove-hook 'doom-first-input-hook
+    #'evil-snipe-mode)
+#+end_src
+
+this function sends the space key (ascii code 32)
+
+more documentation on unread-command-events: https://www.gnu.org/software/emacs/manual/html_node/elisp/Event-Input-Misc.html
+
+Note: space character read form is '? ' (with a space! and no quotes)
+
+jp/send-key-seq from: https://dangirsh.org/projects/doom-config.html#key-chord-config
+maybe it should be pushing onto unread-command-events though? like jp/send-space? idk, it seems to work fine for now...
+
+#+begin_src emacs-lisp
+(defun jp/send-space ()
+  (interactive)
+  (push '(t . 32) unread-command-events))
+(defun jp/send-key-seq (seq)
+  (interactive)
+  (setq unread-command-events (listify-key-sequence seq)))
+(defun jp/send-doom-leader ()
+  (interactive)
+  (jp/send-key-seq "\C-@"))
+#+end_src
+
+#+begin_src emacs-lisp
+(after! key-chord
+  (key-chord-mode 1)
+  (setq key-chord-two-keys-delay .01))
+#+end_src
+
+#+begin_src emacs-lisp
+(map!
+ "<f1>" help-map
+ "<f3>" 'kill-this-buffer
+ "<f5>" 'evil-prev-buffer
+ "<f6>" 'evil-next-buffer
+ "<f7>" 'evil-scroll-up
+ "<f8>" 'evil-scroll-down
+ "S-<f7>" 'evil-goto-first-line
+ "S-<f8>" 'evil-goto-line
+ "<f9>" '+workspace/switch-left
+ "<f10>" '+workspace/switch-right
+
+ "ESC h" 'evil-window-left
+ "ESC l" 'evil-window-right
+ "ESC j" 'evil-window-down
+ "ESC k" 'evil-window-up
+
+ "C-h" 'backward-kill-word ;; ctrl+backspace
+
+ :n "g G" 'evil-goto-char
+ :n "g o" doom-leader-workspace-map
+ :n "s" nil
+
+ )
+
+(map! :map evil-normal-state-map
+      (:prefix ("s" . "custom prefix")
+               :desc "xref forward" "n" 'xref-go-forward
+               :desc "xref backward" "p" 'xref-go-back))
+#+end_src
+
+#+begin_src emacs-lisp
+(map! :map doom-leader-open-map
+      :desc "Org capture" "c" 'org-capture
+      :prefix ("s" . "Org capture todo")
+      :desc "With context" "k" (lambda () (interactive) (org-capture nil "t"))
+      :desc "Without context" "j" (lambda () (interactive) (org-capture nil "T"))
+      )
+
+(map! :leader
+      :desc "Switch other buffer window" ">" 'switch-to-buffer-other-window)
+
+(map! :map org-mode-map
+      :localleader
+      :prefix ("s" . "+tree/subtree")
+      :desc "archive item" "a" 'org-archive-subtree-default
+      :desc "toggle archive tag" "A" 'toggle-archive-tag
+      :desc "insert item below" "o" '+org/insert-item-below
+      :desc "insert item below" "O" '+org/insert-item-above)
+#+end_src
+
+i want "<leader> c ;" to edit special blocks, and also complete the edit once i'm in the special block (or capture buffer). leader binds are global so instead use a lambda to choose based on which mode we're in.
+#+begin_src emacs-lisp
+(map! :leader
+      :prefix ("c" . "+code")
+      :desc "abort special" "u"
+      (lambda ()
+        (interactive)
+        (cond
+         (org-src-mode (org-edit-src-abort))
+         (org-capture-mode (org-capture-kill))
+         (with-editor-mode (with-editor-cancel nil))
+         (t (message "Special edit commands don't apply here"))
+        ))
+      :desc "edit/close special" ";"
+      (lambda ()
+        (interactive)
+        (cond
+         (org-src-mode (org-edit-src-exit))
+         ((and org-capture-mode (not (org-in-src-block-p))) (org-capture-finalize))
+         (evil-org-mode (org-edit-special))
+         (with-editor-mode (with-editor-finish nil))
+         (t (message "Special edit commands don't apply here"))
+         ))
+      )
+#+end_src
+
+#+begin_src emacs-lisp
+(map! :map doom-leader-workspace-map
+      "N" nil
+      :desc "+workspace/new-named" "m" '+workspace/new-named
+
+      :map doom-leader-open-map
+      :desc "toggle vterm popup" "v" '+vterm/toggle)
+
+
+(key-chord-define evil-insert-state-map "dk" 'jp/send-doom-leader)
+#+end_src
+
+stop org mode from shadowing these bindings (interferes with evil-window-... bindings from above)
+#+begin_src emacs-lisp
+(after! evil-org
+  (map! :map evil-org-mode-map
+        :inv "M-j" nil
+        :inv "M-k" nil
+        :inv "M-l" nil
+        :inv "M-h" nil))
+#+end_src
+
+org-mode-map shadows my preferred binding for evil-window-left
+add tangle to org-mode localleader keymap
+
+#+begin_src emacs-lisp
+(map! :map org-mode-map
+      "M-h" 'evil-window-left
+      :localleader
+      :desc "tangle" "z" 'org-babel-tangle)
+#+end_src
+
+#+begin_src emacs-lisp
+(map!
+ :n "U" 'evil-redo
+ :nm "H" 'evil-beginning-of-line
+ :nm "L" 'evil-end-of-line
+ :nm ":" 'evil-repeat-find-char
+ :n ";" 'evil-ex
+ :nm "TAB" 'evil-jump-item
+ :vo "i l" 'evil-inner-paren
+ :vo "a l" 'evil-a-paren
+ )
+
+(map! :leader
+ :n :desc "new workspace" "d w a" '+workspace/new
+ :n :desc "new named workspace" "d w n" '+workspace/new-named
+ :n :desc "delete current workspace" "d w d" '+workspace/delete)
+#+end_src
+
+#+begin_src emacs-lisp
+(map! :leader
+      :desc "M-x" ";" 'execute-extended-command
+      :desc "Eval Expression" ":" 'pp-eval-expression)
+#+end_src
+
+we want to set C-<SPC> to be an alternate leader key, but we want it to work in normal mode too.
+
+Note: terminal emacs sees C-<SPC> as C-@ for some reason.
+NB: apparently it doesn't in powershell in windows terminal? i'm just going to use M-spc
+
+#+begin_src emacs-lisp
+;;(setq doom-leader-alt-key "C-@")
+(setq doom-leader-alt-key "M-<SPC>")
+;(setq doom-localleader-alt-key "C-@ m")
+(setq doom-localleader-alt-key "M-<SPC> m")
+#+end_src
+
+tangle org files on save
+
+from: https://systemcrafters.cc/emacs-from-scratch/configure-everything-with-org-babel/
+
+#+begin_src emacs-lisp
+(defun jp/org-babel-tangle ()
+  (let ((file (buffer-file-name)))
+  (async-start
+   (lambda ()
+     (require 'org)
+     (let ((org-confirm-babel-evaluate nil))
+       (org-babel-tangle-file file))))))
+
+(add-hook
+ 'org-mode-hook
+ (lambda () (add-hook 'after-save-hook #'jp/org-babel-tangle)))
+#+end_src
+
+don't pause before showing which-key buffer (still has an initial delay when emacs first starts up for some reason though)
+
+more documentation here: https://github.com/justbur/emacs-which-key#other-options
+
+#+begin_src emacs-lisp
+(setq which-key-idle-delay 0.01)
+#+end_src
+
+disable rainbow delimiters everywhere
+
+there's probably a better way to do this but it seems to work 🤷
+
+#+begin_src emacs-lisp
+(defun rainbow-delimiters-mode () nil)
+#+end_src
+
+setup some org-roam defaults
+
+from: https://github.com/jethrokuan/dots/blob/master/.doom.d/config.el
+
+setup an org capture template for todos w/o context. sometimes context is useful but it causes a lot of clutter when used by default. for some reason my config keeps crashing when using use-package! org-mode so whatever, it goes here now.
+
+Note: Need to configure c compile environment (MSYS2) if on Windows, before the form below will work
+
+#+begin_src emacs-lisp
+(use-package! org-roam
+  :init
+  (push '("T" "Personal todo w/o context" entry
+          (file+headline +org-capture-todo-file "Inbox")
+          "* [ ] %?\n%i\n" :prepend t)
+        org-capture-templates)
+  (setq ;org-roam-directory (file-truename "~/org/zettel/")
+        org-roam-directory (file-truename "~/external/org/zettel/")
+        org-roam-db-gc-threshold most-positive-fixnum
+        org-id-link-to-org-use-id t
+        org-roam-completion-everywhere t
+        org-roam-v2-ack t)
+  ;; on Windows we need to set this to 'immediate, otherwise things run slowly for some reason
+  ;; I think there's some sqlite timeout issues? See: https://github.com/org-roam/org-roam/issues/1289#issuecomment-744046148
+  (setq org-roam-db-update-method 'immediate)
+  :config
+  (org-roam-db-autosync-mode +1)
+  (setq org-roam-capture-templates
+        '(("m" "main" plain
+           "%?"
+           :if-new (file+head "main/${slug}.org"
+                              "#+title: ${title}\n")
+           :immediate-finish t
+           :unnarrowed t)
+          ("r" "reference" plain "%?"
+           :if-new
+           (file+head "reference/${title}.org" "#+title: ${title}\n")
+           :immediate-finish t
+           :unnarrowed t)))
+  (set-company-backend! 'org-mode '(company-capf))
+  (cl-defmethod org-roam-node-type ((node org-roam-node))
+    "Return the TYPE of NODE."
+    (condition-case nil
+        (file-name-nondirectory
+         (directory-file-name
+          (file-name-directory
+           (file-relative-name (org-roam-node-file node) org-roam-directory))))
+      (error "")))
+  (setq org-roam-node-display-template
+        (concat "${type:15} ${title:*} " (propertize "${tags:10}" 'face 'org-tag))))
+(org-roam-setup)
+#+end_src
+
+Use deft for text search in org and org-roam
+NB: i'm testing out using ripgrep for this purpose below
+
+#+begin_src emacs-lisp
+;;(use-package! deft
+;;  :init
+;;  (setq deft-directory "~/external/org"
+;;        deft-extensions '("md" "org" "txt")
+;;        deft-recursive t))
+#+end_src
+
+Ignore weird lsp issues
+
+#+begin_src emacs-lisp
+(setq lsp-restart 'ignore)
+#+end_src
+
+#+begin_src emacs-lisp
+(after! cider
+  (map! :map cider-mode-map
+        :n "<f6>" nil
+        :n "<f9>" nil))
+
+(map! :map clojure-mode-map
+      :localleader
+      :n "c" 'cider-connect-sibling-clj)
+#+end_src
+
+I want to jk into normal state everywhere, including in vterm-mode
+Vterm also shadows my evil-window-* bindings
+
+#+begin_src emacs-lisp
+(delete 'vterm-mode evil-escape-excluded-major-modes)
+(map! :map vterm-mode-map
+      "M-h" 'evil-window-left
+      "M-l" 'evil-window-right
+      "M-j" 'evil-window-down
+      "M-k" 'evil-window-up
+      "<f3>" 'kill-this-buffer
+      "<f5>" 'evil-prev-buffer
+      "<f6>" 'evil-next-buffer
+      "<f7>" 'evil-scroll-up
+      "<f8>" 'evil-scroll-down
+      "S-<f7>" 'evil-goto-first-line
+      "S-<f8>" 'evil-goto-line
+      "<f9>" '+workspace/switch-left
+      "<f10>" '+workspace/switch-right
+      )
+#+end_src
+
+Setup anki-editor
+
+note: Anki/Anki-Connect is running on the desktop
+
+#+begin_src emacs-lisp
+(setq anki-editor-api-host "jon-desktop-main"
+      anki-editor-org-tags-as-anki-tags nil)
+
+(map! :map org-mode-map
+      :localleader
+      :prefix ("m" . "org-roam")
+      (:prefix ("a" . "anki")
+       :desc "push all to anki" "p" 'anki-editor-push-notes
+       :desc "push this to anki" "o" 'anki-editor-push-note-at-point
+       :desc "push new to anki" "n" 'anki-editor-push-new-notes
+       :desc "push failed to anki" "f" 'anki-editor-retry-failed-notes
+       :desc "insert anki note" "i" 'anki-editor-insert-note
+       :desc "cloze dwim" "c" 'anki-editor-cloze-dwim
+      )
+      )
+
+(defun consult-ripgrep-roam ()
+  "Interactively search org-roam notes"
+  (interactive)
+  (let ((consult-ripgrep-args "rg --null --ignore-case --type org --line-buffered --color=auto --max-columns=500 --no-heading --line-number"))
+    (consult-ripgrep org-roam-directory)))
+
+(map! :map doom-leader-search-map
+      :desc "Search text in org-roam notes" "n" 'consult-ripgrep-roam
+      )
+
+#+end_src
+
+#+begin_src emacs-lisp
+(use-package! anaphora)
+(use-package! jpt-apl-mode
+  :config
+  (map! :leader
+        :prefix ("j" . "misc")
+        :desc "apl expand" "l" 'jpt-apl-match-keycord))
+#+end_src
+
+#+begin_src emacs-lisp
+(setq sly-lisp-implementations nil)
+(push '(ros-ccl ("ros -L ccl-bin run"))
+      sly-lisp-implementations)
+(push '(ros-sbcl ("ros -L sbcl-bin run"))
+      sly-lisp-implementations)
+#+end_src
